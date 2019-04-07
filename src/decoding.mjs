@@ -19,11 +19,16 @@ export const getDictionary = async () => {
     return dictionary.filter(word => word.length > 4);
 }
 
+// don't analyse the whole text in order to gain time, 
+// we consider that 100 cipher bytes for a key byte is enough
+const getCipherChunkLength = (kLength, cLength, minBytes = 100) => 
+    cLength / kLength < minBytes ? cLength : kLength * minBytes;
+
 // e.g. if key = CLE and cipher = MESAGE => M and A were xor with C 
 const groupBytesByKey = (cipher, keyLength) => {
     let groups = {};
 
-    for (let i = 0; i < cipher.byteLength / 2; i++) {
+    for (let i = 0; i < getCipherChunkLength(keyLength, cipher.byteLength) / 2; i++) {
         const key = groups[i % keyLength];
         groups[i % keyLength] = key ? [...key, cipher[i]] : [cipher[i]];
     }
@@ -44,7 +49,6 @@ const getMessageWeights = (languages, message) => {
 
 // Adjust the weight by decreasing it according unexpected chars
 const adjustMessageWeights = (unexpectedChars, message, weights) => {
-    console.log('weights before adjust: ', weights)
     return weights.map(weight => {
         return Object.keys(unexpectedChars).reduce((acc, char) => {
             const regex = new RegExp('\\' + char, 'g');
@@ -61,7 +65,7 @@ const getHighestWeight = frequencyAnalysis => {
 }
 
 // find the most likely key for a given cipher according frequency analysis
-export const findBestKey = (languages, unexpectedChars, cipher, keyLength, onAttempt) => {
+export const findBestKey = (languages, unexpectedChars, cipher, keyLength) => {
     const bytes = groupBytesByKey(cipher, keyLength);
     
     // array of dec values
@@ -81,11 +85,8 @@ export const findBestKey = (languages, unexpectedChars, cipher, keyLength, onAtt
             
             const weights = getMessageWeights(languages, kcMessage); 
             const adjustedWeights = adjustMessageWeights(unexpectedChars, kcMessage, weights); 
-            console.log('adjusted weights: ', adjustedWeights)
             
-            frequencyAnalysis[c] = adjustedWeights;
-            
-            onAttempt(k + 1, c - start);
+            frequencyAnalysis[c] = adjustedWeights;            
         }
         
         key.push(getHighestWeight(frequencyAnalysis));
