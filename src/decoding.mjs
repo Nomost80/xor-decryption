@@ -1,7 +1,10 @@
-import { Worker } from 'worker_threads';
+import os from 'os';
+import Pool from 'worker-threads-pool';
 import windows1252 from 'windows-1252';
 import _ from 'lodash';
 import { readdir, readFile } from './utils';
+
+const pool = new Pool({ max: os.cpus().length });
 
 export const getLanguages = async () => {
     const filenames = await readdir('./lang');
@@ -60,17 +63,19 @@ export const getHighestWeight = frequencyAnalysis => {
         _.max(frequencyAnalysis[a]) > _.max(frequencyAnalysis[b]) ? a : b);
 }
 
-// worker (thread) which find the best value of a key part (one byte)
+// worker (thread) pool which find the best value of a key part (one byte)
 const runKeyWorker = workerData => {
     return new Promise((resolve, reject) => {
-        const worker = new Worker('./src/worker.mjs', { workerData });
-        worker.on('message', resolve);
-        worker.on('error', reject);
+        pool.acquire('./src/worker.mjs', { workerData }, (err, worker) => {
+            if (err) return reject(err);
+            worker.on('message', resolve);
+            worker.on('error', reject);
+        })
     });
 }
 
 // find the most likely key for a given cipher according frequency analysis
-// its returns an array of int
+// it returns an array of int
 export const findBestKey = async (languages, unexpectedChars, cipher, keyLength) => {
     const bytes = groupBytesByKey(cipher, keyLength);
 
@@ -78,11 +83,10 @@ export const findBestKey = async (languages, unexpectedChars, cipher, keyLength)
         await runKeyWorker({ languages, unexpectedChars, bytes, k })
     ));
 
-    console.log('key: ', key)
     return key;
 }
 
-// str: array of int, key: array of int | xor decoding
+// str: array of int, key: array of int
 export const xor = (str, key) => {
     let result = '';
     
