@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node --experimental-modules ./src/main.mjs",
+    "start": "node --no-warnings --experimental-modules --experimental-worker ./src/main.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -13,6 +13,7 @@
     "cli-progress": "^2.1.1",
     "lodash": "^4.17.11",
     "minimist": "^1.2.0",
-    "windows-1252": "^1.0.0"
+    "windows-1252": "^1.0.0",
+    "worker-threads-pool": "^2.0.0"
   }
 }

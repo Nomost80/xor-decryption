@@ -1,3 +1,4 @@
+import { Worker } from 'worker_threads';
 import windows1252 from 'windows-1252';
 import _ from 'lodash';
 import { readdir, readFile } from './utils';
@@ -32,7 +33,7 @@ const groupBytesByKey = (cipher, keyLength) => {
 }
 
 // calculate the message weight by analysing the chars frequency for each language
-const getMessageWeights = (languages, message) => {
+export const getMessageWeights = (languages, message) => {
     return languages.map(lang => {
         return Object.keys(lang).reduce((acc, char) => {
             const regex = new RegExp(char, 'g');
@@ -43,8 +44,7 @@ const getMessageWeights = (languages, message) => {
 }
 
 // Adjust the weight by decreasing it according unexpected chars
-const adjustMessageWeights = (unexpectedChars, message, weights) => {
-    console.log('weights before adjust: ', weights)
+export const adjustMessageWeights = (unexpectedChars, message, weights) => {
     return weights.map(weight => {
         return Object.keys(unexpectedChars).reduce((acc, char) => {
             const regex = new RegExp('\\' + char, 'g');
@@ -55,42 +55,30 @@ const adjustMessageWeights = (unexpectedChars, message, weights) => {
 }
 
 // get the key byte value for the highest message weight of the frequency analysis
-const getHighestWeight = frequencyAnalysis => {
+export const getHighestWeight = frequencyAnalysis => {
     return Object.keys(frequencyAnalysis).reduce((a, b) => 
         _.max(frequencyAnalysis[a]) > _.max(frequencyAnalysis[b]) ? a : b);
 }
 
+// worker (thread) which find the best value of a key part (one byte)
+const runKeyWorker = workerData => {
+    return new Promise((resolve, reject) => {
+        const worker = new Worker('./src/worker.mjs', { workerData });
+        worker.on('message', resolve);
+        worker.on('error', reject);
+    });
+}
+
 // find the most likely key for a given cipher according frequency analysis
-export const findBestKey = (languages, unexpectedChars, cipher, keyLength, onAttempt) => {
+// its returns an array of int
+export const findBestKey = async (languages, unexpectedChars, cipher, keyLength) => {
     const bytes = groupBytesByKey(cipher, keyLength);
-    
-    // array of dec values
-    let key = [];
-    
-    // for each key char 
-    for (let k = 0; k < keyLength; k++) {
-        let frequencyAnalysis = {};
-        const start = 'a'.charCodeAt(0);
-        const end = 'z'.charCodeAt(0) + 1;
-        
-        // for each possible characters (a-z)
-        for (let c = start; c < end; c++) {
-            
-            const kcMessage = bytes[k].reduce((acc, encryptedByte) => 
-                acc += String.fromCharCode(c ^ encryptedByte), '');
-            
-            const weights = getMessageWeights(languages, kcMessage); 
-            const adjustedWeights = adjustMessageWeights(unexpectedChars, kcMessage, weights); 
-            console.log('adjusted weights: ', adjustedWeights)
-            
-            frequencyAnalysis[c] = adjustedWeights;
-            
-            onAttempt(k + 1, c - start);
-        }
-        
-        key.push(getHighestWeight(frequencyAnalysis));
-    }
-    
+
+    const key = await Promise.all(_.range(keyLength).map(async k =>
+        await runKeyWorker({ languages, unexpectedChars, bytes, k })
+    ));
+
+    console.log('key: ', key)
     return key;
 }
 
