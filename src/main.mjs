@@ -14,7 +14,6 @@ const argv = minimist(process.argv.slice(2));
 
     const keyLength = argv.kl || 6;
     const encryptedFiles = await readdir(argv.d || './resources/encrypted_files');
-    const iterations = encryptedFiles.length * keyLength * 26;
 
     await Promise.all(encryptedFiles.map(async (filename, f) => {
         const path = argv.d ? argv.d + '/' : './resources/encrypted_files/';
