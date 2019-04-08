@@ -5,13 +5,15 @@
   "main": "index.js",
   "scripts": {
     "start": "node --experimental-modules ./src/main.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha -r @std/esm --recursive './tests/*.mjs'"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@std/esm": "^0.26.0",
     "lodash": "^4.17.11",
     "minimist": "^1.2.0",
+    "mocha": "^6.1.1",
     "windows-1252": "^1.0.0"
   }
 }

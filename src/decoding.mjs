@@ -21,14 +21,14 @@ export const getDictionary = async () => {
 
 // don't analyse the whole text in order to gain time, 
 // we consider that 100 cipher bytes for a key byte is enough
-const getCipherChunkLength = (kLength, cLength, minBytes = 100) => 
+export const getCipherChunkLength = (kLength, cLength, minBytes = 100) => 
     cLength / kLength < minBytes ? cLength : kLength * minBytes;
 
 // e.g. if key = CLE and cipher = MESAGE => M and A were xor with C 
-const groupBytesByKey = (cipher, keyLength) => {
+export const groupBytesByKey = (cipher, keyLength) => {
     let groups = {};
 
-    for (let i = 0; i < getCipherChunkLength(keyLength, cipher.byteLength) / 2; i++) {
+    for (let i = 0; i < getCipherChunkLength(keyLength, cipher.length); i++) {
         const key = groups[i % keyLength];
         groups[i % keyLength] = key ? [...key, cipher[i]] : [cipher[i]];
     }
@@ -37,7 +37,7 @@ const groupBytesByKey = (cipher, keyLength) => {
 }
 
 // calculate the message weight by analysing the chars frequency for each language
-const getMessageWeights = (languages, message) => {
+export const getMessageWeights = (languages, message) => {
     return languages.map(lang => {
         return Object.keys(lang).reduce((acc, char) => {
             const regex = new RegExp(char, 'g');
@@ -48,7 +48,7 @@ const getMessageWeights = (languages, message) => {
 }
 
 // Adjust the weight by decreasing it according unexpected chars
-const adjustMessageWeights = (unexpectedChars, message, weights) => {
+export const adjustMessageWeights = (unexpectedChars, message, weights) => {
     return weights.map(weight => {
         return Object.keys(unexpectedChars).reduce((acc, char) => {
             const regex = new RegExp('\\' + char, 'g');
@@ -59,7 +59,7 @@ const adjustMessageWeights = (unexpectedChars, message, weights) => {
 }
 
 // get the key byte value for the highest message weight of the frequency analysis
-const getHighestWeight = frequencyAnalysis => {
+export const getHighestWeight = frequencyAnalysis => {
     return Object.keys(frequencyAnalysis).reduce((a, b) => 
         _.max(frequencyAnalysis[a]) > _.max(frequencyAnalysis[b]) ? a : b);
 }
