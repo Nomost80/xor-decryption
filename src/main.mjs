@@ -25,7 +25,7 @@ const argv = minimist(process.argv.slice(2));
 
         const message = xor(cipher, key);
 
-        let output = 'key: ' + key.map(dec => String.fromCharCode(dec)).join('') + '\n\n' + message;
+        let output = 'key: ' + key.map(dec => String.fromCharCode(dec)).join('') + '\n\n';
         output += atLeast(dictionary, word => message.includes(word), 3) ? 
             message : "The message doesn't contain at least 3 words from dictionary. We assume the key is bad.";
 
