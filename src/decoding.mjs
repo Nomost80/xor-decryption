@@ -1,6 +1,6 @@
 import windows1252 from 'windows-1252';
 import _ from 'lodash';
-import { readdir, readFile } from './utils';
+import {readdir, readFile} from './utils';
 
 export const getLanguages = async () => {
     const filenames = await readdir('./lang');
@@ -42,7 +42,7 @@ export const getMessageWeights = (languages, message) => {
         return Object.keys(lang).reduce((acc, char) => {
             const regex = new RegExp(char, 'g');
             const occurences = (message.match(regex) || []).length;
-            return acc += occurences * lang[char];
+            return acc + occurences * lang[char];
         }, 0);
     });
 }
@@ -53,7 +53,7 @@ export const adjustMessageWeights = (unexpectedChars, message, weights) => {
         return Object.keys(unexpectedChars).reduce((acc, char) => {
             const regex = new RegExp('\\' + char, 'g');
             const occurences = (message.match(regex) || []).length;
-            return acc += occurences * unexpectedChars[char];
+            return acc + occurences * unexpectedChars[char];
         }, weight);
     });
 }
@@ -80,13 +80,12 @@ export const findBestKey = (languages, unexpectedChars, cipher, keyLength) => {
         // for each possible characters (a-z)
         for (let c = start; c < end; c++) {
             
-            const kcMessage = bytes[k].reduce((acc, encryptedByte) => 
-                acc += String.fromCharCode(c ^ encryptedByte), '');
+            const kcMessage = bytes[k].reduce((acc, encryptedByte) =>
+                acc + String.fromCharCode(c ^ encryptedByte), '');
             
-            const weights = getMessageWeights(languages, kcMessage); 
-            const adjustedWeights = adjustMessageWeights(unexpectedChars, kcMessage, weights); 
-            
-            frequencyAnalysis[c] = adjustedWeights;            
+            const weights = getMessageWeights(languages, kcMessage);
+
+            frequencyAnalysis[c] = adjustMessageWeights(unexpectedChars, kcMessage, weights);
         }
         
         key.push(getHighestWeight(frequencyAnalysis));
