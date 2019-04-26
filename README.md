@@ -1,5 +1,3 @@
-A school project which deals with cryptography.
-
 # Goal
 The goal is to decrypt 11 files. 
 
